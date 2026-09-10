@@ -9,7 +9,15 @@
 - 1ファイル300行を超えそうになったら、分割案を提案してから分割する
 
 ## 実行環境
+
+Raspberry Pi と Mac mini の **両方で同じように動く**こと。
+どちらか片方でしか動かないコード（OS依存の書き方）は入れない。
+
 - Raspberry Pi 4 (Raspberry Pi OS 64bit)、Chromiumで動かす
+- Mac mini (Apple Silicon / macOS)、Chrome か Safari で動かす
 - ビルドツール禁止。npm、webpack、vite、TypeScript 使用禁止
 - 素のHTML + CSS + JavaScript (ES Modules) のみ。外部ライブラリ一切なし
 - python3 -m http.server 8000 で起動、http://localhost:8000 で遊べること
+  （どちらの機械でも このコマンドは同じ）
+- file:// で直接 index.html を開くのは禁止。ES Modules が読みこめないため
+  必ず http:// 経由で開く
