@@ -21,3 +21,21 @@ Raspberry Pi と Mac mini の **両方で同じように動く**こと。
   （どちらの機械でも このコマンドは同じ）
 - file:// で直接 index.html を開くのは禁止。ES Modules が読みこめないため
   必ず http:// 経由で開く
+
+### Mac mini で動かすときの注意
+- ポート 8000 は別のアプリ（algo-trade-bot の uvicorn）が使用中。
+  ゲームは **8001番** を使う
+- `python3` は anaconda のものが先に見つかるが、これは macOS の
+  ファイアウォールで「外からの接続」が許可されていない。
+  LAN の他の機械（iPhone など）から見るときは
+  許可済みの **`/usr/bin/python3`** を明示して起動する
+- LAN の他の機械からは `http://192.168.1.217:8001` で開く
+
+### 起動コマンドまとめ
+```
+# Raspberry Pi (192.168.1.219)
+cd ~/fighter-game && python3 -m http.server 8000
+
+# Mac mini (192.168.1.217)
+cd ~/GitHub/fighter-game && /usr/bin/python3 -m http.server 8001 --bind 0.0.0.0
+```
