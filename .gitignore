@@ -1,0 +1,12 @@
+# OS が かってに作るファイル
+.DS_Store
+Thumbs.db
+
+# エディタの設定フォルダ
+.vscode/
+.idea/
+*.swp
+
+# ログや一時ファイル
+*.log
+tmp/

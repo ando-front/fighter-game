@@ -1,0 +1,21 @@
+/* ページ全体のすきま（よはく）をなくす */
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  background: #202020; /* まわりのはいけいは こいグレー */
+}
+
+/* canvas を画面のまんなかにおく */
+body {
+  display: flex;
+  align-items: center;     /* たてのまんなか */
+  justify-content: center; /* よこのまんなか */
+}
+
+/* ゲームの板。ドットがぼやけないようにする */
+#game {
+  background: #000;              /* まだ何もないので まっ黒 */
+  image-rendering: pixelated;    /* かくだいしてもクッキリ */
+  display: block;
+}
