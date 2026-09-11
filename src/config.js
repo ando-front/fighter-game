@@ -1,145 +1,163 @@
 // ============================================================
 // config.js — ゲームで使う「数字」を ぜんぶ ここに集めるファイル
 // 数字を直したいときは、かならず このファイルだけを直す。
-// （ほかのファイルに数字を じかに書かないこと）
 // ============================================================
 
 // --- 画面のこと ---
 export const SCREEN = {
-  WIDTH: 960,   // よこはば
-  HEIGHT: 540,  // たてはば
-  FPS: 60,      // 1びょうかんに 60かい 絵をかきかえる
+  WIDTH: 960,
+  HEIGHT: 540,
+  FPS: 60,            // 1びょうかんに 60かい すすめる
 };
-
-// 1コマ（1フレーム）にかかる時間。ミリびょう（1000ぶんの1びょう）で書く
 export const FRAME_MS = 1000 / SCREEN.FPS;
 
 // --- 画面の外に出たら ミス（撃墜）になる線 ---
-export const BLASTZONE = {
-  LEFT: -100,
-  RIGHT: 1060,
-  BOTTOM: 700,
-};
+export const BLASTZONE = { LEFT: -100, RIGHT: 1060, BOTTOM: 700 };
 
-// --- ステージ（足場）の場所 ---
-// x1〜x2 が よこのはば、y が 板の高さ
+// --- ステージ（足場）の場所。x1〜x2 が よこはば、y が 板の上のふち ---
 export const STAGE = {
-  GROUND: { x1: 180, x2: 780, y: 420 },        // じめん
+  GROUND: { x1: 180, x2: 780, y: 420 },
   PLATFORMS: [
-    { x1: 250, x2: 380, y: 300 },              // 左のうきしま
-    { x1: 580, x2: 710, y: 300 },              // 右のうきしま
+    { x1: 250, x2: 380, y: 300 },
+    { x1: 580, x2: 710, y: 300 },
   ],
-  THICKNESS: 8,          // 板の あつさ（見た目だけ）
+  PLATFORM_THICKNESS: 10,   // うきしまの あつさ
+  GROUND_THICKNESS: 16,     // じめんの あつさ
+  ISLAND_DEPTH: 110,        // じめんの下に ぶらさがる 島の ふかさ
+  HORIZON_Y: 380,           // 空と 地平線の さかいめ
 };
 
 // --- キャラクターのこと ---
 export const FIGHTER = {
-  WIDTH: 40,             // からだの よこはば（当たり判定は四角だけ）
-  HEIGHT: 60,            // からだの たかさ
-  CROUCH_HEIGHT: 30,     // しゃがんだときの たかさ
+  WIDTH: 40,
+  HEIGHT: 60,
+  CROUCH_HEIGHT: 30,
 
-  GRAVITY: 0.8,          // 1コマごとに 下へ ひっぱられる力
-  MAX_FALL_SPEED: 16,    // どんなに落ちても これより速くならない
+  GRAVITY: 0.8,
+  MAX_FALL_SPEED: 16,
+  JUMP_HOLD_GRAVITY: 0.5,   // ジャンプキーを おしたまま 上がっている あいだの 重力の わりあい（ふわっと）
+  FAST_FALL_SPEED: 13,      // 空中で ↓ を おすと この はやさで すぐ 落ちる
 
-  GROUND_SPEED: 5,       // じめんの上を 走るはやさ
-  AIR_SPEED: 4,          // 空中で よこに動くはやさ
+  GROUND_SPEED: 5,          // 走る はやさの 上げん
+  GROUND_ACCEL: 0.9,        // 走りはじめの 加速（1コマごと）
+  GROUND_DECEL: 1.2,        // キーを はなしたときの 減速（1コマごと）
+  AIR_SPEED: 4,             // 空中の よこはやさの 上げん
+  AIR_ACCEL: 0.35,          // 空中の 加速（ゆっくり）
+  AIR_DRAG: 0.985,          // 空中で 何も おしていないとき 1コマごとに かける数（ほぼ すべる）
 
-  JUMP_SPEED: -14,       // ジャンプした しゅんかんの はやさ（上むきなのでマイナス）
-  MAX_JUMPS: 2,          // 地上1回 ＋ 空中1回 ＝ ぜんぶで2回とべる
+  JUMP_SPEED: -14,
+  MAX_JUMPS: 2,             // 地上1回 ＋ 空中1回（復帰ジャンプ）
+  REFRESH_AIR_JUMP_ON_HIT: true,  // くらったら 空中ジャンプを 1回 もどす（復帰できるように）
 
-  STOCKS: 3,             // もちき（のこり人数）
+  STOCKS: 3,
+  DROP_THROUGH_FRAMES: 6,
+  RESPAWN_INVINCIBLE_FRAMES: 90,
+  LAND_SQUASH_FRAMES: 6,    // 着地したとき ぐにゃっと つぶれる コマ数
 
-  DROP_THROUGH_FRAMES: 6,        // うきしまで しゃがんだとき すりぬける コマ数
-  RESPAWN_INVINCIBLE_FRAMES: 90, // ふっかつ直後 むてきの コマ数（1.5びょう）
-
-  // ふっかつ（さいしょ）の場所。y は 足のいち
   SPAWN: [
-    { x: 300, y: 300, facing: 1 },    // 1P：左のうきしまの上、右むき
-    { x: 620, y: 300, facing: -1 },   // 2P：右のうきしまの上、左むき
+    { x: 300, y: 300, facing: 1 },
+    { x: 620, y: 300, facing: -1 },
   ],
 };
 
-// --- ダメージと ふっとび ---
+// --- ダメージと ふっとび（スマブラ式：ダメージが たまるほど とぶ）---
 export const KNOCKBACK = {
-  MAX_DAMAGE: 999,        // ダメージの上げんは 999%
-  DAMAGE_SCALE: 0.12,     // ためたダメージ 1% ごとに ふっとびが ふえる りょう
-  CONTROL_SPEED: 3,       // ふっとびの はやさが これいか に なったら また うごかせる
-  HITSTOP_FRAMES: 6,      // 当たったとき 2人とも 6コマ とまる
-  ANGLE_DEG: 45,          // ふっとぶ 方向（0=まよこ、90=まうえ）
-  DECAY: 0.94,            // ふっとびの はやさが 1コマごとに かける数（だんだん おそくなる）
+  MAX_DAMAGE: 999,
+  DAMAGE_SCALE: 0.12,       // ためたダメージ 1% ごとに ふっとびが ふえる
+  CONTROL_SPEED: 3,         // ふっとびが これいか で そうさ ふっかつ
+  DECAY: 0.95,              // ふっとびの はやさが 1コマごとに かける数
+  HITSTUN_PER_KB: 1.5,      // ふっとびの はやさ × これ ＝ うごけない コマ数
+  HITSTOP_BASE: 3,          // ヒットストップ（当たった しゅんかん とまる）の きほん コマ数
+  HITSTOP_PER_DAMAGE: 0.5,  // 技のダメージ 1 ごとに ふえる コマ数
+  HITSTOP_MAX: 12,
+  FLASH_FRAMES: 10,         // くらったとき 白く 点めつ する コマ数
+  SHAKE_PER_KB: 0.35,       // 画面ゆれの 大きさ ＝ ふっとび × これ
+  SHAKE_MAX: 9,
+  KO_SHAKE: 12,             // 撃墜した ときの 画面ゆれ
 };
 // ふっとびのはやさ ＝ (基礎ふっとび ＋ ためたダメージ × DAMAGE_SCALE) × 技の倍率
 
 // --- 技（こうげき）のデータ ---
-// damage    : あたえるダメージ
-// baseKB    : 基礎ふっとび
-// kbScale   : 技の倍率
-// hitbox    : 当たり判定の四角（前がわに 出す）
-// active    : 当たり判定が 出ている コマ数
-// endlag    : 技のあと うごけない コマ数（後隙）
+// startup : 出るまでの コマ数（ふりかぶり）   active : 当たり判定が ある コマ数
+// endlag  : 技のあと うごけない コマ数        angle  : ふっとぶ 角度（0=まよこ 90=まうえ）
 export const MOVES = {
-  // 弱攻撃（よわこうげき）
   LIGHT: {
-    name: '弱',
-    damage: 3,
-    baseKB: 2,
-    kbScale: 0.8,
-    hitbox: { width: 30, height: 40 },
-    active: 3,
-    endlag: 8,
+    name: '弱', damage: 3, baseKB: 2, kbScale: 0.8, angle: 35,
+    hitbox: { width: 30, height: 40 }, startup: 2, active: 3, endlag: 8,
+    slashSize: 26,
   },
-  // 横強攻撃（よこつよこうげき）
   TILT: {
-    name: '横強',
-    damage: 10,
-    baseKB: 5,
-    kbScale: 1.4,
-    hitbox: { width: 50, height: 50 },
-    active: 5,
-    endlag: 20,
+    name: '横強', damage: 10, baseKB: 5, kbScale: 1.4, angle: 40,
+    hitbox: { width: 50, height: 50 }, startup: 5, active: 5, endlag: 20,
+    slashSize: 44,
   },
 };
 
-// --- キーの わりあて ---
-// event.code の名前で かく（キーボードの ばしょ で きまる名前）
-// 1つの うごきに キーが 2つ以上 あってもよい（どれを おしても同じ）
+// --- キーの わりあて（event.code の名前。1つの うごきに キーが 2つ以上 あってもよい）---
 export const KEYS = {
-  P1: {
-    LEFT:  ['KeyA'],
-    RIGHT: ['KeyD'],
-    JUMP:  ['KeyW'],
-    CROUCH:['KeyS'],
-    LIGHT: ['KeyF'],
-    TILT:  ['KeyG'],
-  },
+  P1: { LEFT: ['KeyA'], RIGHT: ['KeyD'], JUMP: ['KeyW'], CROUCH: ['KeyS'], LIGHT: ['KeyF'], TILT: ['KeyG'] },
   P2: {
-    LEFT:  ['ArrowLeft'],
-    RIGHT: ['ArrowRight'],
-    JUMP:  ['ArrowUp'],
-    CROUCH:['ArrowDown'],
-    LIGHT: ['ShiftLeft', 'ShiftRight'],
-    TILT:  ['ControlLeft', 'ControlRight'],
+    LEFT: ['ArrowLeft'], RIGHT: ['ArrowRight'], JUMP: ['ArrowUp'], CROUCH: ['ArrowDown'],
+    LIGHT: ['ShiftLeft', 'ShiftRight'], TILT: ['ControlLeft', 'ControlRight'],
   },
-  RESTART: ['Enter'],   // ゲームが おわったあと もういちど あそぶ
+  RESTART: ['Enter'],
 };
 
-// --- 色（画像はつかわない。四角と色だけで あらわす）---
+// --- 試合の ながれ（コマ数）---
+export const MATCH = {
+  INTRO_FRAMES: 130,        // 「READY」→「GO!」まで
+  GO_AT: 80,                // この コマで「GO!」に かわる
+  KO_TEXT_FRAMES: 50,       // 撃墜したとき「KO!」を 出す 長さ
+  END_FRAMES: 110,          // 「GAME!」を 出してから けっか画面まで
+};
+
+// --- 色（画像はつかわない。四角と線と色だけ）---
 export const COLORS = {
-  BACKGROUND: '#000000',  // はいけい：くろ
-  STAGE:      '#666666',  // 足場：グレー
-  P1:         '#3388ff',  // 1P：あお
-  P2:         '#ff3333',  // 2P：あか
-  EYE:        '#ffffff',  // 目（むいている方向が わかるように）
-  HITBOX:     'rgba(255, 255, 80, 0.7)',  // こうげきの 四角：きいろ（すけている）
-  TEXT:       '#ffffff',  // 文字：しろ
-  TEXT_DIM:   '#888888',  // うすい文字：グレー
+  SKY_TOP: '#0a0f2e',
+  SKY_MID: '#3b2a6b',
+  SKY_HORIZON: '#f08a4b',
+  SUN: '#ffd68a',
+  STAR: 'rgba(255,255,255,0.8)',
+  MOUNTAIN_FAR: '#2a1f4d',
+  MOUNTAIN_NEAR: '#1a1435',
+  GROUND_TOP: '#7ccf5a',    // じめんの 草
+  GROUND_SIDE: '#4a7a35',
+  ISLAND: '#3a2a22',        // 島の 土
+  ISLAND_DARK: '#241a15',
+  PLATFORM_TOP: '#9ae07a',
+  PLATFORM_SIDE: '#5a8a45',
+
+  P1: { main: '#3f8cff', dark: '#1f4fa8', light: '#9ec6ff', name: '1P' },
+  P2: { main: '#ff4b4b', dark: '#a82020', light: '#ffb0b0', name: '2P' },
+  EYE: '#ffffff',
+  FLASH: '#ffffff',         // くらったときの 点めつ色
+  SLASH: 'rgba(255,255,255,0.9)',
+  SPARK: '#fff2a0',
+  SPARK_HOT: '#ff8040',
+  DUST: 'rgba(220,210,190,0.7)',
+
+  HUD_PANEL: 'rgba(0,0,0,0.45)',
+  TEXT: '#ffffff',
+  TEXT_DIM: 'rgba(255,255,255,0.45)',
+  DAMAGE_LOW: '#ffffff',    // ダメージ％の 色。たまるほど あかくなる
+  DAMAGE_MID: '#ffe066',
+  DAMAGE_HIGH: '#ff9a3c',
+  DAMAGE_MAX: '#ff3c3c',
 };
 
-// --- 文字（HUD = 画面に出す じょうほう）---
+// --- HUD（画面に 出す じょうほう）---
 export const HUD = {
-  FONT_BIG:   'bold 28px sans-serif',
-  FONT_SMALL: '14px sans-serif',
-  FONT_WIN:   'bold 48px sans-serif',
-  MARGIN: 20,             // 画面のはしから 文字までの すきま
-  STOCK_SIZE: 14,         // のこり機数の 四角の 大きさ
+  MARGIN: 24,
+  PANEL_W: 230,
+  PANEL_H: 96,
+  FONT_DAMAGE: 'bold 52px "Arial Black", Impact, sans-serif',
+  FONT_NAME: 'bold 18px sans-serif',
+  FONT_SMALL: '13px sans-serif',
+  FONT_ANNOUNCE: 'bold 84px "Arial Black", Impact, sans-serif',
+  FONT_ANNOUNCE_SUB: 'bold 26px sans-serif',
+  DAMAGE_MID_AT: 50,        // この％から 黄色
+  DAMAGE_HIGH_AT: 100,      // この％から オレンジ
+  DAMAGE_MAX_AT: 150,       // この％から 赤
+  DAMAGE_BUMP_FRAMES: 12,   // ダメージが ふえたとき 数字が どんっと 大きくなる コマ数
+  STOCK_ICON: 18,
 };

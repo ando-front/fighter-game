@@ -39,3 +39,14 @@ cd ~/fighter-game && python3 -m http.server 8000
 # Mac mini (192.168.1.217)
 cd ~/GitHub/fighter-game && /usr/bin/python3 -m http.server 8001 --bind 0.0.0.0
 ```
+
+## ファイル構成（src/）
+- config.js  … 全パラメータ
+- input.js   … キー入力
+- physics.js … 重力・着地・矩形判定
+- stage.js   … 背景と足場の描画
+- fighter.js … キャラの状態と動き（絵は描かない）
+- render.js  … キャラの人型シルエット描画
+- effects.js … ヒットスパーク・斬撃・土けむり・画面ゆれ
+- hud.js     … ダメージ％・ストック・READY/GO/KO/GAME の文字
+- main.js    … 試合の流れとゲームループ
