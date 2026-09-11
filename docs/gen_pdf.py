@@ -59,7 +59,7 @@ def tbl(data, widths=None):
 
 def code(lines):
     text = '<br/>'.join(l.replace(' ','&nbsp;').replace('<','&lt;').replace('>','&gt;') for l in lines)
-    return Paragraph(text, ParagraphStyle('c', fontName='Courier', fontSize=7.5, backColor=colors.HexColor('#f4f4f4'), leftIndent=4, leading=11, spaceAfter=6, spaceBefore=4))
+    return Paragraph(text, ParagraphStyle('c', fontName=F, fontSize=7.5, backColor=colors.HexColor('#f4f4f4'), leftIndent=4, leading=11, spaceAfter=6, spaceBefore=4))
 
 story = [
     sp(4), h1('電子工作連携 詳細実装設計書'),
