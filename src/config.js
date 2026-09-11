@@ -101,6 +101,8 @@ export const KEYS = {
     LIGHT: ['ShiftLeft', 'ShiftRight'], TILT: ['ControlLeft', 'ControlRight'],
   },
   RESTART: ['Enter'],
+  PAUSE: ['Escape', 'KeyP'],
+  MUTE: ['KeyM'],
 };
 
 // --- 試合の ながれ（コマ数）---
@@ -127,14 +129,18 @@ export const COLORS = {
   PLATFORM_TOP: '#9ae07a',
   PLATFORM_SIDE: '#5a8a45',
 
-  P1: { main: '#3f8cff', dark: '#1f4fa8', light: '#9ec6ff', name: '1P' },
-  P2: { main: '#ff4b4b', dark: '#a82020', light: '#ffb0b0', name: '2P' },
+  // style … 'scarf'（首まき）か 'crest'（とがった かみ）で 見た目を 変える
+  P1: { main: '#4b9bff', dark: '#1c4a9e', light: '#bcdcff', line: '#0b1c3d', cloth: '#ffd24a', name: '1P', style: 'scarf' },
+  P2: { main: '#ff5757', dark: '#a31c1c', light: '#ffc2c2', line: '#3d0b0b', cloth: '#7ef0c8', name: '2P', style: 'crest' },
   EYE: '#ffffff',
   FLASH: '#ffffff',         // くらったときの 点めつ色
   SLASH: 'rgba(255,255,255,0.9)',
   SPARK: '#fff2a0',
   SPARK_HOT: '#ff8040',
   DUST: 'rgba(220,210,190,0.7)',
+  SHADOW: 'rgba(0,0,0,0.35)',
+  GHOST: 0.28,                 // ざんぞう（うすさ）
+  COMBO: '#ffe066',
 
   HUD_PANEL: 'rgba(0,0,0,0.45)',
   TEXT: '#ffffff',
@@ -160,4 +166,60 @@ export const HUD = {
   DAMAGE_MAX_AT: 150,       // この％から 赤
   DAMAGE_BUMP_FRAMES: 12,   // ダメージが ふえたとき 数字が どんっと 大きくなる コマ数
   STOCK_ICON: 18,
+};
+
+// --- キャラクターの 見た目（人型シルエット）---
+export const BODY = {
+  LIMB_W: 8,            // 手足の ふとさ
+  OUTLINE: 3,           // ふちどりの ふとさ
+  HEAD_R: 9.5,          // 頭の 大きさ
+  HAND_R: 3.6,          // 手と 足さきの 大きさ
+  TURN_SPEED: 0.28,     // むきを かえるとき くるっと まわる はやさ（0〜1）
+  BLINK_EVERY: 90,      // まばたきの あいだ（コマ）
+  BLINK_LEN: 5,         // まばたきの ながさ（コマ）
+  STRETCH: 0.012,       // たて速度で のびちぢみする わりあい
+  STRETCH_MAX: 0.22,
+  CLOTH_SEGS: 5,        // 首まき／かみ の ふしの数
+  CLOTH_LEN: 7,         // ふし1つの ながさ
+  CLOTH_GRAVITY: 0.45,
+  CLOTH_FOLLOW: 0.45,
+  CLOTH_DAMP: 0.84,
+  CLOTH_WIND: 0.22,     // はしると なびく つよさ
+};
+
+// --- カメラ（撃墜のとき ぐっと よる）---
+export const CAMERA = {
+  KO_ZOOM: 1.5,         // 撃墜した しゅんかんの 大きさ
+  ZOOM_IN: 0.35,        // よる はやさ
+  ZOOM_OUT: 0.06,       // もどる はやさ
+  HOLD_FRAMES: 24,      // よったまま とまる コマ数
+};
+
+// --- 画面の外に いる人を しめす やじるし ---
+export const ARROW = {
+  MARGIN: 46,           // 画面の はしから やじるしまで
+  SIZE: 20,
+  PULSE: 0.12,          // ドキドキ する はやさ
+};
+
+// --- れんぞくヒット（コンボ）---
+export const COMBO = {
+  SHOW_FRAMES: 70,      // 「3 HIT!」を 出しておく コマ数
+  MIN_SHOW: 2,          // 2かい 以上 つづいたら 出す
+};
+
+// --- ざんぞう（はやく ふっとんだとき うしろに のこる かげ）---
+export const GHOST = {
+  MIN_SPEED: 9,         // この はやさ より 上で のこる
+  EVERY: 2,             // 何コマおきに のこすか
+  LIFE: 12,
+};
+
+// --- ダメージの 数字が ぽんっと 出る ---
+export const POPUP = { LIFE: 46, RISE: 0.9, FONT: 'bold 26px "Arial Black", Impact, sans-serif' };
+
+// --- 音（WebAudio で その場で つくる。音のファイルは つかわない）---
+export const AUDIO = {
+  ENABLED: true,        // M キーで 切りかえられる
+  VOLUME: 0.22,
 };

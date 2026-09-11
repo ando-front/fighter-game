@@ -3,7 +3,8 @@
 // ============================================================
 // つかいかた：spawnXxx() で エフェクトを 出す → まいコマ update() → draw(ctx)
 
-import { COLORS } from './config.js';
+import { COLORS, POPUP, GHOST } from './config.js';
+import { drawGhost } from './render.js';
 
 const particles = [];   // いま 出ている エフェクトの リスト
 let shake = 0;          // 画面ゆれの 大きさ（だんだん 小さくなる）
@@ -62,6 +63,16 @@ export function spawnKO(x, y, color) {
   particles.push({ type: 'ring', x, y, life: 20, max: 20, size: 40 });
 }
 
+// ダメージの 数字が ぽんっと 出る
+export function spawnPopup(x, y, damage, color) {
+  particles.push({ type: 'popup', x, y, text: `${damage}`, color, life: POPUP.LIFE, max: POPUP.LIFE, vy: -POPUP.RISE });
+}
+
+// ざんぞう（はやく ふっとんでいるとき うしろに のこる かげ）
+export function spawnGhost(f) {
+  particles.push({ type: 'ghost', x: f.x, y: f.y, w: f.w, h: f.h, color: f.colors.main, life: GHOST.LIFE, max: GHOST.LIFE });
+}
+
 // 画面を ゆらす（大きいほうを のこす）
 export function addShake(amount) {
   shake = Math.max(shake, amount);
@@ -75,6 +86,7 @@ export function update() {
     if (p.life <= 0) { particles.splice(i, 1); continue; }
     if (p.type === 'spark') { p.x += p.vx; p.y += p.vy; p.vx *= 0.9; p.vy = p.vy * 0.9 + 0.25; }
     if (p.type === 'dust') { p.x += p.vx; p.y += p.vy; p.vx *= 0.95; }
+    if (p.type === 'popup') { p.y += p.vy; p.vy *= 0.94; }
   }
   // ゆれ：ランダムに ずらしつつ だんだん おさまる
   if (shake > 0.3) {
@@ -117,6 +129,16 @@ export function draw(ctx) {
         ctx.moveTo(p.x, p.y); ctx.lineTo(p.x + Math.cos(a) * r, p.y + Math.sin(a) * r);
       }
       ctx.stroke();
+    } else if (p.type === 'ghost') {
+      drawGhost(ctx, p);
+    } else if (p.type === 'popup') {
+      ctx.font = POPUP.FONT; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      const pop = p.life > p.max - 6 ? 1.5 - (p.max - p.life) / 6 * 0.5 : 1;
+      ctx.save(); ctx.translate(p.x, p.y); ctx.scale(pop, pop);
+      ctx.lineWidth = 5; ctx.strokeStyle = 'rgba(0,0,0,0.8)'; ctx.lineJoin = 'round';
+      ctx.strokeText(p.text, 0, 0);
+      ctx.fillStyle = p.color; ctx.fillText(p.text, 0, 0);
+      ctx.restore();
     } else if (p.type === 'slash') {
       // 前に むかって ふりぬく 弧。時間で 角度が すすむ
       ctx.strokeStyle = COLORS.SLASH; ctx.lineWidth = 4 * t + 1;

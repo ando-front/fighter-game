@@ -2,10 +2,11 @@
 // fighter.js — キャラクター1人ぶんの データと うごきの 係（絵は render.js）
 // ============================================================
 
-import { FIGHTER, KNOCKBACK, MOVES } from './config.js';
+import { FIGHTER, KNOCKBACK, MOVES, BODY, GHOST, COMBO } from './config.js';
 import { isDown, wasPressed } from './input.js';
 import { applyGravity, moveAndLand } from './physics.js';
 import * as effects from './effects.js';
+import * as audio from './audio.js';
 
 export class Fighter {
   // index : 0=1P 1=2P   keys : KEYS.P1/P2   colors : COLORS.P1/P2
@@ -41,6 +42,36 @@ export class Fighter {
     this.landTimer = 0;          // 着地の ぐにゃっ の のこりコマ数
     this.damageBump = 0;         // HUD の ％が どんっと なる のこりコマ数
     this.jumpHeld = false;       // ジャンプキーを おしっぱなし か
+    this.facingVisual = this.facing;   // 見た目の むき（なめらかに はんてんする）
+    this.blink = 0; this.blinkTimer = BODY.BLINK_EVERY;
+    this.combo = 0; this.comboTimer = 0;   // れんぞくで くらった かず
+    this.ghostTimer = 0;
+    this.initCloth();
+  }
+
+  // 首まき／かみ の ふしを 首のところに ならべる
+  initCloth() {
+    const nx = this.x + this.w / 2, ny = this.y + this.h * 0.28;
+    this.cloth = [];
+    for (let i = 0; i < BODY.CLOTH_SEGS; i++) {
+      this.cloth.push({ x: nx, y: ny + i * BODY.CLOTH_LEN, vx: 0, vy: 0 });
+    }
+  }
+
+  // 首まき／かみ を なびかせる（前の ふしを おいかける）
+  updateCloth() {
+    const back = -this.facing;                     // うしろがわに なびく
+    let px = this.x + this.w / 2 + back * 3;
+    let py = this.y + this.h * (this.colors.style === 'crest' ? 0.14 : 0.3);
+    for (const c of this.cloth) {
+      c.vx = (c.vx + (px - c.x) * BODY.CLOTH_FOLLOW - this.vx * BODY.CLOTH_WIND) * BODY.CLOTH_DAMP;
+      c.vy = (c.vy + (py - c.y) * BODY.CLOTH_FOLLOW + BODY.CLOTH_GRAVITY - this.vy * BODY.CLOTH_WIND * 0.5) * BODY.CLOTH_DAMP;
+      c.x += c.vx; c.y += c.vy;
+      // ふし どうしが はなれすぎないように ひっぱる
+      const dx = c.x - px, dy = c.y - py, d = Math.hypot(dx, dy) || 1;
+      if (d > BODY.CLOTH_LEN) { c.x = px + (dx / d) * BODY.CLOTH_LEN; c.y = py + (dy / d) * BODY.CLOTH_LEN; }
+      px = c.x; py = c.y;
+    }
   }
 
   respawn() {
@@ -61,6 +92,17 @@ export class Fighter {
     if (this.flashTimer > 0) this.flashTimer--;
     if (this.landTimer > 0) this.landTimer--;
     if (this.damageBump > 0) this.damageBump--;
+    if (this.comboTimer > 0 && --this.comboTimer === 0) this.combo = 0;
+
+    // まばたき
+    if (this.blink > 0) this.blink--;
+    else if (--this.blinkTimer <= 0) { this.blink = BODY.BLINK_LEN; this.blinkTimer = BODY.BLINK_EVERY + Math.random() * 120; }
+
+    // はやく ふっとんでいるあいだ ざんぞうを のこす
+    const spd = Math.hypot(this.vx, this.vy);
+    if (this.knockback > 0 && spd > GHOST.MIN_SPEED) {
+      if (++this.ghostTimer % GHOST.EVERY === 0) effects.spawnGhost(this);
+    } else this.ghostTimer = 0;
 
     this.updateAttack();
     if (allowInput && this.canControl()) this.handleInput();
@@ -89,12 +131,17 @@ export class Fighter {
     } else {
       this.crouching = false;
     }
+    // むきを なめらかに はんてん（キー入力の あとで やる。そうしないと 1コマ おくれる）
+    this.facingVisual += (this.facing - this.facingVisual) * BODY.TURN_SPEED;
+    if (Math.abs(this.facing - this.facingVisual) < 0.02) this.facingVisual = this.facing;
+
+    this.updateCloth();
   }
 
   // 着地した しゅんかん
   onLand(fallSpeed) {
     this.landTimer = FIGHTER.LAND_SQUASH_FRAMES;
-    if (fallSpeed > 6) effects.spawnDust(this.x + this.w / 2, this.y + this.h, 0, 5);
+    if (fallSpeed > 6) { effects.spawnDust(this.x + this.w / 2, this.y + this.h, 0, 5); audio.land(); }
     // ふっとびの おわりかけ なら 着地で そうさ ふっかつ
     if (this.knockback > 0 && this.hitstun <= 0) { this.knockback = 0; this.vx = 0; }
   }
@@ -108,6 +155,7 @@ export class Fighter {
         // 当たり判定が 出る しゅんかんに 斬撃を 出す
         const hb = this.getHitbox();
         effects.spawnSlash(hb.x + hb.w / 2, hb.y + hb.h / 2, this.facing, m.slashSize);
+        audio.swing();
       }
       if (this.attack.frame >= m.startup + m.active) {
         this.endlag = m.endlag;
@@ -149,8 +197,8 @@ export class Fighter {
       this.jumpsLeft--;
       this.jumpHeld = true;
       this.onGround = false;
-      if (airJump) effects.spawnJumpPuff(this.x + this.w / 2, this.y + this.h);
-      else effects.spawnDust(this.x + this.w / 2, this.y + this.h, 0, 3);
+      if (airJump) { effects.spawnJumpPuff(this.x + this.w / 2, this.y + this.h); audio.airJump(); }
+      else { effects.spawnDust(this.x + this.w / 2, this.y + this.h, 0, 3); audio.jump(); }
     }
 
     // --- こうげき ---
@@ -210,6 +258,7 @@ export class Fighter {
     this.hitstun = Math.round(speed * KNOCKBACK.HITSTUN_PER_KB);
     this.flashTimer = KNOCKBACK.FLASH_FRAMES;
     this.damageBump = 12;
+    this.combo++; this.comboTimer = COMBO.SHOW_FRAMES;
     this.facing = -dir;                    // こうげきした人の ほうを むく
     this.attack = null; this.endlag = 0; this.crouching = false;
     this.onGround = false; this.jumpHeld = false;
