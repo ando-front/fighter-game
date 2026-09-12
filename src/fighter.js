@@ -49,27 +49,51 @@ export class Fighter {
     this.initCloth();
   }
 
-  // 首まき／かみ の ふしを 首のところに ならべる
+  // 首まき／かみ が くっつく 場所（首 or 頭のてっぺん）
+  clothAnchor() {
+    const crest = this.colors.style === 'crest';
+    return {
+      // うしろがわに ずらす。そうしないと からだの 真うしろに たれて 見えなくなる
+      x: this.x + this.w / 2 - this.facing * (crest ? 5 : 9),
+      y: this.y + this.h * (crest ? 0.13 : 0.3),
+    };
+  }
+
+  // ふしを 上から 下へ ならべる
   initCloth() {
-    const nx = this.x + this.w / 2, ny = this.y + this.h * 0.28;
+    const a = this.clothAnchor();
+    const segs = this.colors.style === 'crest' ? BODY.CREST_SEGS : BODY.CLOTH_SEGS;
     this.cloth = [];
-    for (let i = 0; i < BODY.CLOTH_SEGS; i++) {
-      this.cloth.push({ x: nx, y: ny + i * BODY.CLOTH_LEN, vx: 0, vy: 0 });
+    for (let i = 1; i <= segs; i++) {
+      // px, py は「1コマ前の いち」。いまと 同じにしておくと 止まった じょうたいで はじまる
+      this.cloth.push({ x: a.x, y: a.y + i * BODY.CLOTH_LEN, px: a.x, py: a.y + i * BODY.CLOTH_LEN });
     }
   }
 
-  // 首まき／かみ を なびかせる（前の ふしを おいかける）
+  // 首まき／かみ を なびかせる
+  // やりかたは「ベルレ法」：いまのいち と 1コマ前のいち の さで うごきを あらわす。
+  // ① いきおいで すすめる ② 重力と 風を たす ③ ふしの あいだを かならず同じ長さに そろえる
   updateCloth() {
-    const back = -this.facing;                     // うしろがわに なびく
-    let px = this.x + this.w / 2 + back * 3;
-    let py = this.y + this.h * (this.colors.style === 'crest' ? 0.14 : 0.3);
+    const a = this.clothAnchor();
+    const crest = this.colors.style === 'crest';
+    // かみ は ほとんど 下に たれない（ツンと 後ろへ）、首まき は 下に たれる
+    const grav = crest ? BODY.CREST_GRAVITY : BODY.CLOTH_GRAVITY;
+    // つねに うしろへ ひっぱる。これが ないと からだに かさなって 見えない
+    const bias = -this.facing * (crest ? BODY.CREST_BIAS : BODY.CLOTH_BIAS);
+    const windX = -this.vx * BODY.CLOTH_WIND + bias;   // 走ると さらに なびく
+    const windY = -this.vy * BODY.CLOTH_WIND * 0.5;
+    let px = a.x, py = a.y;
     for (const c of this.cloth) {
-      c.vx = (c.vx + (px - c.x) * BODY.CLOTH_FOLLOW - this.vx * BODY.CLOTH_WIND) * BODY.CLOTH_DAMP;
-      c.vy = (c.vy + (py - c.y) * BODY.CLOTH_FOLLOW + BODY.CLOTH_GRAVITY - this.vy * BODY.CLOTH_WIND * 0.5) * BODY.CLOTH_DAMP;
-      c.x += c.vx; c.y += c.vy;
-      // ふし どうしが はなれすぎないように ひっぱる
-      const dx = c.x - px, dy = c.y - py, d = Math.hypot(dx, dy) || 1;
-      if (d > BODY.CLOTH_LEN) { c.x = px + (dx / d) * BODY.CLOTH_LEN; c.y = py + (dy / d) * BODY.CLOTH_LEN; }
+      const nx = c.x + (c.x - c.px) * BODY.CLOTH_DAMP + windX;
+      const ny = c.y + (c.y - c.py) * BODY.CLOTH_DAMP + grav + windY;
+      c.px = c.x; c.py = c.y;
+      c.x = nx; c.y = ny;
+
+      // 前の ふしから かならず CLOTH_LEN だけ はなす
+      let dx = c.x - px, dy = c.y - py, d = Math.hypot(dx, dy);
+      if (d < 0.0001) { dx = 0; dy = 1; d = 1; }
+      c.x = px + (dx / d) * BODY.CLOTH_LEN;
+      c.y = py + (dy / d) * BODY.CLOTH_LEN;
       px = c.x; py = c.y;
     }
   }

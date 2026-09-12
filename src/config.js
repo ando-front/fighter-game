@@ -179,12 +179,16 @@ export const BODY = {
   BLINK_LEN: 5,         // まばたきの ながさ（コマ）
   STRETCH: 0.012,       // たて速度で のびちぢみする わりあい
   STRETCH_MAX: 0.22,
-  CLOTH_SEGS: 5,        // 首まき／かみ の ふしの数
-  CLOTH_LEN: 7,         // ふし1つの ながさ
-  CLOTH_GRAVITY: 0.45,
-  CLOTH_FOLLOW: 0.45,
+  CLOTH_SEGS: 6,        // 首まき／かみ の ふしの数
+  CLOTH_LEN: 8,         // ふし1つの ながさ（つねに この間かくに そろえる）
+  CLOTH_GRAVITY: 0.5,
+  CLOTH_FOLLOW: 0.3,
   CLOTH_DAMP: 0.84,
   CLOTH_WIND: 0.22,     // はしると なびく つよさ
+  CLOTH_BIAS: 0.5,      // 首まきが いつも うしろへ ひっぱられる つよさ
+  CREST_SEGS: 4,        // かみ の ふしの数（首まきより みじかい）
+  CREST_GRAVITY: 0.1,   // かみ は ほとんど たれない
+  CREST_BIAS: 0.75,     // かみ が うしろへ ツンと のびる つよさ
 };
 
 // --- カメラ（撃墜のとき ぐっと よる）---
