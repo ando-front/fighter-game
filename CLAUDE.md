@@ -45,7 +45,10 @@ cd ~/GitHub/fighter-game && /usr/bin/python3 -m http.server 8001 --bind 0.0.0.0
 - input.js   … キー入力
 - physics.js … 重力・着地・矩形判定
 - stage.js   … 背景と足場の描画
+- controller.js … 入力の抽象化（キーボード / マウス＋キーボード）
+- ai.js      … CPU の思考
 - fighter.js … キャラの状態と動き（絵は描かない）
+- cloth.js   … マフラー・髪のなびき（ベルレ法）
 - render.js  … キャラの人型シルエット描画
 - effects.js … ヒットスパーク・斬撃・土けむり・画面ゆれ・残像・ダメージ数字
 - audio.js   … WebAudio でその場で合成する効果音（音声ファイルは使わない）

@@ -2,7 +2,7 @@
 // hud.js — ダメージ％・のこり機数・やじるし・コンボ・演出テキストの係
 // ============================================================
 
-import { SCREEN, HUD, COLORS, ARROW, COMBO } from './config.js';
+import { SCREEN, HUD, COLORS, ARROW, COMBO, MENU } from './config.js';
 import { drawMiniFighter } from './render.js';
 
 // ダメージの 大きさで 色を かえる（白 → 黄 → だいだい → 赤）
@@ -51,9 +51,13 @@ export function drawHUD(ctx, fighters, muted) {
 
   ctx.fillStyle = COLORS.TEXT_DIM; ctx.font = HUD.FONT_SMALL;
   ctx.textAlign = 'left';
-  ctx.fillText('1P: A/D 移動  W ジャンプ  S しゃがみ  F 弱  G 横強', m, m);
+  const p1 = fighters[0];
+  ctx.fillText(p1.ctrl.kind === 'mouse' ? '1P: A/D 移動  W ジャンプ  S しゃがみ  左クリック 弱  右クリック 横強'
+    : '1P: A/D 移動  W ジャンプ  S しゃがみ  F 弱  G 横強', m, m);
   ctx.textAlign = 'right';
-  ctx.fillText('2P: ←/→ 移動  ↑ ジャンプ  ↓ しゃがみ  Shift 弱  Ctrl 横強', SCREEN.WIDTH - m, m);
+  const p2 = fighters[1];
+  ctx.fillText(p2.ctrl.kind === 'cpu' ? `2P: CPU（${p2.ctrl.level.name}）`
+    : '2P: ←/→ 移動  ↑ ジャンプ  ↓ しゃがみ  Shift 弱  Ctrl 横強', SCREEN.WIDTH - m, m);
   ctx.textAlign = 'center';
   ctx.fillText(`P 一時停止   M 音 ${muted ? 'OFF' : 'ON'}`, SCREEN.WIDTH / 2, m);
 }
@@ -133,4 +137,42 @@ export function drawPause(ctx) {
   ctx.fillStyle = 'rgba(0,0,0,0.6)';
   ctx.fillRect(0, 0, SCREEN.WIDTH, SCREEN.HEIGHT);
   drawAnnounce(ctx, 'PAUSE', 'P か Esc で つづける', 0.5, COLORS.TEXT);
+}
+
+// ============================================================
+// さいしょの えらぶ画面
+// sel = { row, opponent, scheme }   row が いま えらんでいる ぎょう
+// ============================================================
+export function drawMenu(ctx, sel, frame) {
+  // ステージが すけて 文字と かさならないように しっかり くらくする
+  ctx.fillStyle = 'rgba(0,0,0,0.74)';
+  ctx.fillRect(0, 0, SCREEN.WIDTH, SCREEN.HEIGHT);
+
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  outlined(ctx, 'FIGHTER GAME', SCREEN.WIDTH / 2, 140, MENU.FONT_TITLE, COLORS.TEXT, 10);
+
+  const rows = [
+    { label: 'あいて', values: MENU.OPPONENTS, index: sel.opponent },
+    { label: '1P の そうさ', values: MENU.SCHEMES, index: sel.scheme },
+  ];
+  for (let i = 0; i < rows.length; i++) {
+    const r = rows[i], y = MENU.ROW_Y[i], on = sel.row === i;
+    // えらんでいる ぎょうは 明るく、すこし ゆれる
+    const glow = on ? 1 + Math.sin(frame * 0.12) * 0.04 : 1;
+    ctx.textAlign = 'right';
+    outlined(ctx, r.label, MENU.LABEL_X, y, MENU.FONT_ROW, on ? COLORS.TEXT : COLORS.TEXT_DIM, 5);
+    ctx.textAlign = 'center';
+    ctx.save();
+    ctx.translate(MENU.VALUE_X, y); ctx.scale(glow, glow);
+    outlined(ctx, `${on ? '◀ ' : '  '}${r.values[r.index]}${on ? ' ▶' : '  '}`, 0, 0,
+             MENU.FONT_ROW, on ? COLORS.DAMAGE_MID : COLORS.TEXT_DIM, 5);
+    ctx.restore();
+  }
+
+  ctx.textAlign = 'center';
+  outlined(ctx, 'Enter か クリックで スタート', SCREEN.WIDTH / 2, 400, HUD.FONT_ANNOUNCE_SUB, COLORS.TEXT, 5);
+  ctx.fillStyle = COLORS.TEXT_DIM; ctx.font = MENU.FONT_HINT;
+  ctx.fillText('↑↓ / W S …… えらぶ ぎょうを かえる      ←→ / A D …… ないようを かえる', SCREEN.WIDTH / 2, 452);
+  ctx.fillText('マウス＋キーボード： 移動 A/D・W ジャンプ・S しゃがみ／左クリック 弱・右クリック 横強（マウスの ほうを むく）', SCREEN.WIDTH / 2, 478);
+  ctx.textBaseline = 'alphabetic';
 }

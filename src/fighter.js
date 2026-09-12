@@ -3,16 +3,16 @@
 // ============================================================
 
 import { FIGHTER, KNOCKBACK, MOVES, BODY, GHOST, COMBO } from './config.js';
-import { isDown, wasPressed } from './input.js';
 import { applyGravity, moveAndLand } from './physics.js';
 import * as effects from './effects.js';
 import * as audio from './audio.js';
+import { initCloth, updateCloth } from './cloth.js';
 
 export class Fighter {
-  // index : 0=1P 1=2P   keys : KEYS.P1/P2   colors : COLORS.P1/P2
-  constructor(index, keys, colors) {
+  // index : 0=1P 1=2P   ctrl : うごかす人（人でも CPU でも よい）   colors : COLORS.P1/P2
+  constructor(index, ctrl, colors) {
     this.index = index;
-    this.keys = keys;
+    this.ctrl = ctrl;
     this.colors = colors;
     this.w = FIGHTER.WIDTH;
     this.h = FIGHTER.HEIGHT;
@@ -46,56 +46,7 @@ export class Fighter {
     this.blink = 0; this.blinkTimer = BODY.BLINK_EVERY;
     this.combo = 0; this.comboTimer = 0;   // れんぞくで くらった かず
     this.ghostTimer = 0;
-    this.initCloth();
-  }
-
-  // 首まき／かみ が くっつく 場所（首 or 頭のてっぺん）
-  clothAnchor() {
-    const crest = this.colors.style === 'crest';
-    return {
-      // うしろがわに ずらす。そうしないと からだの 真うしろに たれて 見えなくなる
-      x: this.x + this.w / 2 - this.facing * (crest ? 5 : 9),
-      y: this.y + this.h * (crest ? 0.13 : 0.3),
-    };
-  }
-
-  // ふしを 上から 下へ ならべる
-  initCloth() {
-    const a = this.clothAnchor();
-    const segs = this.colors.style === 'crest' ? BODY.CREST_SEGS : BODY.CLOTH_SEGS;
-    this.cloth = [];
-    for (let i = 1; i <= segs; i++) {
-      // px, py は「1コマ前の いち」。いまと 同じにしておくと 止まった じょうたいで はじまる
-      this.cloth.push({ x: a.x, y: a.y + i * BODY.CLOTH_LEN, px: a.x, py: a.y + i * BODY.CLOTH_LEN });
-    }
-  }
-
-  // 首まき／かみ を なびかせる
-  // やりかたは「ベルレ法」：いまのいち と 1コマ前のいち の さで うごきを あらわす。
-  // ① いきおいで すすめる ② 重力と 風を たす ③ ふしの あいだを かならず同じ長さに そろえる
-  updateCloth() {
-    const a = this.clothAnchor();
-    const crest = this.colors.style === 'crest';
-    // かみ は ほとんど 下に たれない（ツンと 後ろへ）、首まき は 下に たれる
-    const grav = crest ? BODY.CREST_GRAVITY : BODY.CLOTH_GRAVITY;
-    // つねに うしろへ ひっぱる。これが ないと からだに かさなって 見えない
-    const bias = -this.facing * (crest ? BODY.CREST_BIAS : BODY.CLOTH_BIAS);
-    const windX = -this.vx * BODY.CLOTH_WIND + bias;   // 走ると さらに なびく
-    const windY = -this.vy * BODY.CLOTH_WIND * 0.5;
-    let px = a.x, py = a.y;
-    for (const c of this.cloth) {
-      const nx = c.x + (c.x - c.px) * BODY.CLOTH_DAMP + windX;
-      const ny = c.y + (c.y - c.py) * BODY.CLOTH_DAMP + grav + windY;
-      c.px = c.x; c.py = c.y;
-      c.x = nx; c.y = ny;
-
-      // 前の ふしから かならず CLOTH_LEN だけ はなす
-      let dx = c.x - px, dy = c.y - py, d = Math.hypot(dx, dy);
-      if (d < 0.0001) { dx = 0; dy = 1; d = 1; }
-      c.x = px + (dx / d) * BODY.CLOTH_LEN;
-      c.y = py + (dy / d) * BODY.CLOTH_LEN;
-      px = c.x; py = c.y;
-    }
+    initCloth(this);
   }
 
   respawn() {
@@ -139,9 +90,9 @@ export class Fighter {
     this.y = bottom - this.h;
 
     // 重力：ジャンプキーを おしたまま 上がっている あいだは よわめる（ふわっと）
-    const floaty = this.vy < 0 && this.jumpHeld && isDown(this.keys.JUMP) && this.knockback === 0;
+    const floaty = this.vy < 0 && this.jumpHeld && this.ctrl.down('JUMP') && this.knockback === 0;
     applyGravity(this, floaty ? FIGHTER.JUMP_HOLD_GRAVITY : 1);
-    if (!isDown(this.keys.JUMP)) this.jumpHeld = false;
+    if (!this.ctrl.down('JUMP')) this.jumpHeld = false;
 
     const fallSpeed = this.vy;
     const landed = moveAndLand(this, platforms, this.dropTimer > 0);
@@ -159,7 +110,7 @@ export class Fighter {
     this.facingVisual += (this.facing - this.facingVisual) * BODY.TURN_SPEED;
     if (Math.abs(this.facing - this.facingVisual) < 0.02) this.facingVisual = this.facing;
 
-    this.updateCloth();
+    updateCloth(this);
   }
 
   // 着地した しゅんかん
@@ -192,15 +143,15 @@ export class Fighter {
 
   // キーを 見て うごきを きめる
   handleInput() {
-    const k = this.keys;
-    const dir = (isDown(k.RIGHT) ? 1 : 0) - (isDown(k.LEFT) ? 1 : 0);
-    const crouchKey = isDown(k.CROUCH);
+    const c = this.ctrl;
+    const dir = (c.down('RIGHT') ? 1 : 0) - (c.down('LEFT') ? 1 : 0);
+    const crouchKey = c.down('CROUCH');
 
     // --- しゃがみ／すりぬけ／急降下 ---
     this.crouching = false;
     if (this.onGround && crouchKey) {
       const onFloating = this.standingOn && !this.standingOn.isGround;
-      if (onFloating && wasPressed(k.CROUCH)) {
+      if (onFloating && c.pressed('CROUCH')) {
         this.dropTimer = FIGHTER.DROP_THROUGH_FRAMES;
         this.y += 1; this.onGround = false;
       } else {
@@ -215,7 +166,7 @@ export class Fighter {
     else this.applyMovement(dir);
 
     // --- ジャンプ（地上1回 ＋ 空中1回）---
-    if (wasPressed(k.JUMP) && this.jumpsLeft > 0 && !this.crouching) {
+    if (c.pressed('JUMP') && this.jumpsLeft > 0 && !this.crouching) {
       const airJump = !this.onGround;
       this.vy = FIGHTER.JUMP_SPEED;
       this.jumpsLeft--;
@@ -226,8 +177,8 @@ export class Fighter {
     }
 
     // --- こうげき ---
-    if (wasPressed(k.LIGHT)) this.startAttack(MOVES.LIGHT);
-    else if (wasPressed(k.TILT)) this.startAttack(MOVES.TILT);
+    if (c.pressed('LIGHT')) this.startAttack(MOVES.LIGHT);
+    else if (c.pressed('TILT')) this.startAttack(MOVES.TILT);
   }
 
   // dir（-1/0/1）の むきに 加速する
@@ -256,6 +207,9 @@ export class Fighter {
   }
 
   startAttack(move) {
+    // マウスで あそんでいるときは、マウスの ある ほうを むいて 出す
+    const aim = this.ctrl.aim(this);
+    if (aim !== null) this.facing = aim;
     this.attack = { move, frame: 0, hasHit: false };
     this.crouching = false;
     if (this.onGround) this.vx = 0;

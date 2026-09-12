@@ -227,3 +227,36 @@ export const AUDIO = {
   ENABLED: true,        // M キーで 切りかえられる
   VOLUME: 0.22,
 };
+
+// --- マウスで こうげきする ときの きまり ---
+export const MOUSE = {
+  LIGHT_BUTTON: 0,      // 左クリック ＝ 弱こうげき
+  TILT_BUTTON: 2,       // 右クリック ＝ 横強こうげき
+  DEADZONE: 12,         // キャラに 近すぎる ときは むきを かえない（ピクセル）
+};
+
+// --- CPU（コンピューターの あいて）---
+export const CPU = {
+  // よわい・ふつう・つよい で 考えなおす はやさ などが かわる
+  LEVELS: {
+    EASY:   { name: 'よわい', think: 20, attackChance: 0.5, range: 60, chase: 0.75, jumpChance: 0.15, recoverSkill: 0.6, tiltChance: 0.25 },
+    NORMAL: { name: 'ふつう', think: 10, attackChance: 0.8, range: 54, chase: 0.9,  jumpChance: 0.3,  recoverSkill: 0.85, tiltChance: 0.4 },
+    HARD:   { name: 'つよい', think: 5,  attackChance: 0.95, range: 50, chase: 1.0,  jumpChance: 0.45, recoverSkill: 1.0, tiltChance: 0.55 },
+  },
+  SAFE_MARGIN: 40,      // じめんの はしから これだけ 内がわで ひきかえす
+  VERTICAL_REACH: 45,   // たての ずれが これ以下なら こうげきが とどく
+  TILT_AT_DAMAGE: 60,   // あいてが これ以上 たまったら 横強を ねらう
+};
+
+// --- さいしょの えらぶ画面 ---
+export const MENU = {
+  ROWS: 2,
+  OPPONENTS: ['2P（ふたりで）', 'CPU よわい', 'CPU ふつう', 'CPU つよい'],
+  SCHEMES: ['キーボードだけ', 'マウス＋キーボード'],
+  FONT_TITLE: 'bold 64px "Arial Black", Impact, sans-serif',
+  FONT_ROW: 'bold 24px sans-serif',
+  FONT_HINT: '15px sans-serif',
+  ROW_Y: [250, 310],
+  VALUE_X: 560,
+  LABEL_X: 300,
+};

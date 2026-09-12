@@ -2,23 +2,26 @@
 // main.js — ゲームの いりぐち。試合の ながれを まとめて うごかす
 // ============================================================
 
-import { SCREEN, FRAME_MS, KEYS, COLORS, KNOCKBACK, MATCH, CAMERA, MOVES } from './config.js';
+import { SCREEN, FRAME_MS, KEYS, COLORS, KNOCKBACK, MATCH, CAMERA, MOVES, MENU } from './config.js';
 import * as input from './input.js';
 import * as effects from './effects.js';
 import * as audio from './audio.js';
 import { rectsOverlap, overlapCenter, isOutOfBounds } from './physics.js';
 import { getPlatforms, drawBackground, drawStage } from './stage.js';
 import { drawFighter, drawShadow } from './render.js';
-import { drawHUD, drawAnnounce, drawResult, drawPause, drawOffscreenArrows, drawCombo } from './hud.js';
+import { drawHUD, drawAnnounce, drawResult, drawPause, drawOffscreenArrows, drawCombo, drawMenu } from './hud.js';
+import { KeyboardController, MouseController } from './controller.js';
+import { CpuController } from './ai.js';
 import { Fighter } from './fighter.js';
 
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
 const platforms = getPlatforms();
+input.attachMouse(canvas);   // マウスを つかえるようにする
 
 let fighters = [];
 let hitstop = 0;
-let phase = 'intro';     // 'intro' → 'play' → 'end'
+let phase = 'menu';      // 'menu' → 'intro' → 'play' → 'end'
 let phaseFrame = 0;
 let koText = 0;
 let winner = null;
@@ -27,9 +30,21 @@ let paused = false;
 // カメラ（撃墜のとき ぐっと よる）
 let cam = { zoom: 1, target: 1, x: SCREEN.WIDTH / 2, y: SCREEN.HEIGHT / 2, hold: 0 };
 let announced = { ready: false, go: false, end: false };
+// さいしょの えらぶ画面の じょうたい
+const sel = { row: 0, opponent: 1, scheme: 0 };   // opponent 0=2P 1〜3=CPU、scheme 0=キーボード 1=マウス
+
+// えらんだ 内容から「うごかす人」を つくる
+function makeControllers() {
+  const p1 = sel.scheme === 1 ? new MouseController(KEYS.P1) : new KeyboardController(KEYS.P1);
+  const levels = [null, 'EASY', 'NORMAL', 'HARD'];
+  const lv = levels[sel.opponent];
+  const p2 = lv === null ? new KeyboardController(KEYS.P2) : new CpuController(lv);
+  return [p1, p2];
+}
 
 function newGame() {
-  fighters = [new Fighter(0, KEYS.P1, COLORS.P1), new Fighter(1, KEYS.P2, COLORS.P2)];
+  const [c1, c2] = makeControllers();
+  fighters = [new Fighter(0, c1, COLORS.P1), new Fighter(1, c2, COLORS.P2)];
   hitstop = 0; phase = 'intro'; phaseFrame = 0; koText = 0; winner = null; paused = false;
   cam = { zoom: 1, target: 1, x: SCREEN.WIDTH / 2, y: SCREEN.HEIGHT / 2, hold: 0 };
   announced = { ready: false, go: false, end: false };
@@ -44,6 +59,9 @@ function update() {
   // 音の 入り／切り は いつでも できる
   if (input.wasPressed(KEYS.MUTE)) audio.toggle();
 
+  // さいしょの えらぶ画面
+  if (phase === 'menu') { updateMenu(); input.endFrame(); return; }
+
   // 一時停止
   if (input.wasPressed(KEYS.PAUSE) && phase !== 'end') {
     paused = !paused; audio.pause();
@@ -57,7 +75,7 @@ function update() {
 
   if (phase === 'end') {
     if (!announced.end) { announced.end = true; audio.gameEnd(); }
-    if (phaseFrame > MATCH.END_FRAMES && input.wasPressed(KEYS.RESTART)) newGame();
+    if (phaseFrame > MATCH.END_FRAMES && input.wasPressed(KEYS.RESTART)) { phase = 'menu'; phaseFrame = 0; }
     for (const f of fighters) f.update(platforms, false);
     input.endFrame();
     return;
@@ -72,10 +90,30 @@ function update() {
   }
 
   const canAct = phase === 'play';
+  // CPU は うごく前に 考える（人の ばあいは 何も しない）
+  for (let i = 0; i < 2; i++) fighters[i].ctrl.think(fighters[i], fighters[1 - i]);
   for (const f of fighters) f.update(platforms, canAct);
   if (canAct) { checkHits(); checkKO(); }
   if (phase === 'intro' && phaseFrame >= MATCH.INTRO_FRAMES) { phase = 'play'; phaseFrame = 0; }
   input.endFrame();
+}
+
+// えらぶ画面の そうさ（↑↓で ぎょう、←→で ないよう、Enter か クリックで スタート）
+function updateMenu() {
+  const up = input.wasPressed(KEYS.P2.JUMP) || input.wasPressed(KEYS.P1.JUMP);
+  const down = input.wasPressed(KEYS.P2.CROUCH) || input.wasPressed(KEYS.P1.CROUCH);
+  const left = input.wasPressed(KEYS.P2.LEFT) || input.wasPressed(KEYS.P1.LEFT);
+  const right = input.wasPressed(KEYS.P2.RIGHT) || input.wasPressed(KEYS.P1.RIGHT);
+
+  if (up) { sel.row = (sel.row + MENU.ROWS - 1) % MENU.ROWS; audio.ready(); }
+  if (down) { sel.row = (sel.row + 1) % MENU.ROWS; audio.ready(); }
+
+  const list = sel.row === 0 ? MENU.OPPONENTS : MENU.SCHEMES;
+  const key = sel.row === 0 ? 'opponent' : 'scheme';
+  if (left) { sel[key] = (sel[key] + list.length - 1) % list.length; audio.pause(); }
+  if (right) { sel[key] = (sel[key] + 1) % list.length; audio.pause(); }
+
+  if (input.wasPressed(KEYS.RESTART) || input.wasMousePressed(0)) { audio.go(); newGame(); }
 }
 
 // カメラを なめらかに 動かす
@@ -139,6 +177,7 @@ function checkKO() {
 // ------------------------------------------------------------
 function draw() {
   drawBackground(ctx, frame);
+  if (phase === 'menu') { drawStage(ctx); drawMenu(ctx, sel, frame); return; }
 
   ctx.save();
   // カメラの ズーム（撃墜の 場所を 中心に よる）
@@ -186,6 +225,9 @@ function loop(now) {
   requestAnimationFrame(loop);
 }
 
+// さいしょに キャラを つくっておいてから、えらぶ画面を 出す
+// （newGame() は phase を 'intro' に するので、そのあと 'menu' に もどす）
 newGame();
+phase = 'menu';
 requestAnimationFrame(loop);
 console.log('main.js を よみこみました。画面サイズ:', SCREEN.WIDTH, 'x', SCREEN.HEIGHT);
